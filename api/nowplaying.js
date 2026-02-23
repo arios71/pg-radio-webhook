@@ -1,31 +1,46 @@
+// pg-radio-webhook/api/nowplaying.js
+import fs from 'fs';
+import path from 'path';
+
+const DATA_FILE = path.join(process.cwd(), 'data', 'latest.json');
+
 export default async function handler(req, res) {
-  // 🔹 Configurar CORS para permitir tu dominio
+  // 🔹 CORS
   res.setHeader('Access-Control-Allow-Origin', 'https://www.puragracia.com');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Responder a preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  // Preflight
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    // 🔹 Recibir metadata enviada por Sam Broadcaster
-    // Si usas POST desde webhook, está en req.body
-    const data = req.method === 'POST' ? req.body : {
-      title: "Cargando...",
-      artist: "",
-      album: "",
-      coverArt: ""
-    };
+    if (req.method === 'POST') {
+      const data = req.body;
 
-    console.log('Received metadata:', data);
+      if (data && (data.title || data.artist)) {
+        // Guardar metadata en archivo JSON
+        fs.writeFileSync(
+          DATA_FILE,
+          JSON.stringify({
+            title: data.title || "Sin título",
+            artist: data.artist || "Desconocido",
+            album: data.album || "Sin álbum",
+            coverArt: data.coverArt || "https://via.placeholder.com/80"
+          }, null, 2)
+        );
+      }
 
-    // 🔹 Devolver la metadata para que el fetch en el sitio la use
-    return res.status(200).json(data);
-
+      return res.status(200).json({ message: 'Metadata recibida', data });
+    } else if (req.method === 'GET') {
+      // Leer metadata actual
+      const content = fs.readFileSync(DATA_FILE, 'utf-8');
+      const latestMetadata = JSON.parse(content);
+      return res.status(200).json(latestMetadata);
+    } else {
+      return res.status(405).json({ message: 'Only GET and POST allowed' });
+    }
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    console.error('Error en API nowplaying:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
