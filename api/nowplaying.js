@@ -1,16 +1,36 @@
+let currentMetadata = {
+  artist: "Cargando...",
+  title: "",
+  album: "",
+  cover: ""
+};
+
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Only POST allowed' });
+
+  // ===== CORS =====
+  res.setHeader("Access-Control-Allow-Origin", "https://puragracia.com");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
   }
 
-  try {
-    const data = req.body; // Esto recibe el JSON enviado por Sam Broadcaster
-    console.log('Received metadata:', data);
-
-    // Devuelve una respuesta simple para confirmar recepción
-    return res.status(200).json({ message: 'Received metadata', data });
-  } catch (error) {
-    console.error('Error processing webhook:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+  // ===== POST (Sam Broadcaster) =====
+  if (req.method === "POST") {
+    try {
+      currentMetadata = req.body;
+      console.log("Metadata actualizada:", currentMetadata);
+      return res.status(200).json({ message: "Metadata guardada" });
+    } catch (error) {
+      return res.status(500).json({ message: "Error interno" });
+    }
   }
+
+  // ===== GET (Tu PWA) =====
+  if (req.method === "GET") {
+    return res.status(200).json(currentMetadata);
+  }
+
+  return res.status(405).json({ message: "Método no permitido" });
 }
