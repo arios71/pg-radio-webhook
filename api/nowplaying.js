@@ -1,14 +1,16 @@
+// api/nowplaying.js
 let currentMetadata = {
   artist: "Cargando...",
   title: "",
   album: "",
-  cover: ""
+  coverArt: ""
 };
 
 export default async function handler(req, res) {
 
   // ===== CORS =====
-res.setHeader("Access-Control-Allow-Origin", "*");
+  // Permite tanto puragracia.com como www.puragracia.com
+  res.setHeader("Access-Control-Allow-Origin", "*"); 
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
@@ -23,11 +25,12 @@ res.setHeader("Access-Control-Allow-Origin", "*");
       console.log("Metadata actualizada:", currentMetadata);
       return res.status(200).json({ message: "Metadata guardada" });
     } catch (error) {
+      console.error("Error en POST:", error);
       return res.status(500).json({ message: "Error interno" });
     }
   }
 
-  // ===== GET (Tu PWA) =====
+  // ===== GET (PWA) =====
   if (req.method === "GET") {
     return res.status(200).json(currentMetadata);
   }
